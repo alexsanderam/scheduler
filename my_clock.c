@@ -11,9 +11,31 @@ Data (última atualização): 22/02/2014*/
 #include "my_clock.h"
 
 
-unsigned int sclock = 0;
+unsigned int sclock;
+pthread_t* t;
 
-unsigned int getClock()
+void startSClock()
+{
+	sclock = 0;
+	t = (pthread_t*) malloc (sizeof(pthread_t));
+	pthread_create(t, NULL, runSClock, NULL);
+	free(t);
+}
+
+void* runSClock()
+{
+		while(1)
+		{
+			//delay
+			usleep(DELAY_SCLOCK);
+			//incrementa o clock
+			increaseClock();
+		}
+
+		return 0;
+}
+
+unsigned int getSClock()
 {
 	unsigned int* c;
 
@@ -31,9 +53,6 @@ unsigned int increaseClock()
 {
 	pthread_mutex_lock(&mux);
 		sclock++;
-
-		//meio segundo de delay
-		usleep(DELAY);
 	pthread_mutex_unlock(&mux);
 
 	return sclock;

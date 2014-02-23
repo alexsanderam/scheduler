@@ -25,7 +25,7 @@ dL'essentiel est invisible pour les yeux
 	#include <time.h>
 
 	#define LOCKED_RATE 0.8
-	#define DEFAULT_FREQUENCY 2.7 //GHZ
+	#define DEFAULT_FREQUENCY 1
 
 
     typedef struct 

@@ -78,7 +78,7 @@ void runSimulator(Simulator* simulator)
 	Job* job;
 
 	pthread_mutex_lock(&simulator->mux);
-		flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);// || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
+		flag = (simulator->quantityOfJobs > simulator->finishedQueue->size) || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
 	pthread_mutex_unlock(&simulator->mux);
 
 	startSClock();
@@ -94,19 +94,17 @@ void runSimulator(Simulator* simulator)
 			
 				if(job->arrival_time >= getSClock())
 				{
-					 /*adiciona na lista de prontos em ordem não crescente de prioridades*/
-					insertionSort(simulator->alreadyQueue, job, ((float*) &job->priority), DECRESCENT);
+					add(simulator->alreadyQueue, job); /*adiciona na lista de prontos*/
 					removeByValue(simulator->createdsQueue, job); /*remove da lista de criados*/
 				}
 			}
 
-			/*delay do clock*/
-			usleep(DELAY_SCLOCK);
+		pthread_mutex_unlock(&simulator->mux);
 
-			scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
-			
-			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);// || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
+		//sheduling(simulator);
 
+		pthread_mutex_lock(&simulator->mux);
+			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size) || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
 		pthread_mutex_unlock(&simulator->mux);
 	}
 }

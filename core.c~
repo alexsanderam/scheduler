@@ -53,18 +53,18 @@ void* runCore(void* c)
 	{
 
 		/*bloqueia o acesso ao core*/
-		//pthread_mutex_lock(&core->mux);
+		pthread_mutex_lock(&core->mux);
 		j = core->currentJob;
 
 		if((j != NULL) && (j->status != FINISHED))
 		{
-			if(j->responseTime == 0)
-				j->responseTime = getSClock(); //tempo de resposta
+				if(j->responseTime == 0)
+					j->responseTime = getSClock(); //tempo de resposta
 
 			if (j->function != NULL)
 			{
 				/*desbloqueia o acesso ao core*/
-				//pthread_mutex_unlock(&core->mux);
+				pthread_mutex_unlock(&core->mux);
 				j->function();
 			}
 			else
@@ -74,7 +74,7 @@ void* runCore(void* c)
 				updateStatus(j);
 
 				/*desbloqueia o acesso ao core*/
-				//pthread_mutex_unlock(&core->mux);
+				pthread_mutex_unlock(&core->mux);
 			}		
 		}
 	}

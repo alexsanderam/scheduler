@@ -17,4 +17,19 @@ dL'essentiel est invisible pour les yeux
 	#include "list_struct.h"
 	#include "core.h"
 
+
+	#define WP 1 	//peso do critério prioridade na decisão do escalonador
+	#define WSRT 1	//peso do critério SRT na decisão do escalonador
+	#define WQ 1	//peso do critério quantum na decisão do escalonador
+
+	#define QUANTUM 5 //tamanho do quantum
+
+	#define SHEDULER_CRITERION(P, SRT, Q) (WP*P + WSRT*SRT - WQ*Q) / 3
+	#define SHEDULER_DECISION(CRITERION, AVG) CRITERION >= AVG
+	#define CURRENT_QUANTUM(CURRENT_STEP) CURRENT_STEP % QUANTUM
+
+	void scheduling(List*, List*, List*, List*);
+	Job* getGreatestCriterionJob(List*);
+	float avgCriterion(List*);
+
 #endif

@@ -24,7 +24,6 @@ dL'essentiel est invisible pour les yeux
 	#include <pthread.h>
 	#include <sys/types.h>
 	#include <sys/syscall.h>
-	#include "scheduler.h"
 
 	#define DELAY 50000 /*microsegundos*/
 
