@@ -1,0 +1,3 @@
+all:
+	clear
+	gcc main.c simulator.c core.c cache.c job.c list_struct.c -o simulator -Wall -lm -pthread
