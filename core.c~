@@ -57,7 +57,7 @@ void* runCore(void* c)
 		/*delay do clock de acordo com a frequência do core*/
 		usleep(((float) 1/(core->frequency)) * DELAY_SCLOCK);
 
-		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED) || (core->currentJob->status == FINISHED))
+		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED) || (core->currentJob->status == WAITING))
 			sem_wait(&core->sem); /*decrementa o semáfaro*/
 
 		/*garante acesso exclusivo*/
@@ -109,13 +109,10 @@ void updateStatus(Job* j)
 	if((j->status == RUNNING) && (j->currentStep == j->service_time))
 	{
 		j->status = FINISHED;
-		j->turnaroundTime = getSClock() - j->arrival_time; //tempo atual menos o tempo de chegado na fila de prontos
+		j->turnaroundTime = j->waitingTime + j->currentStep; //tempo atual menos o tempo de chegado na fila de prontos
 	}
 	else if((j->status == RUNNING) && (waitingRate >= LOCKED_RATE))
-	{
-		j->enterWaitingQueueTime = getSClock();
 		j->status = WAITING;
-	}
 }
 
 
@@ -127,5 +124,5 @@ void assignToCore(Core* core, Job* job)
 {
 		core->currentJob = job;
 		job->status = RUNNING;
-		job->waitingTime += (getSClock() - job->enterWaitingQueueTime); //tempo de espera
+		job->waitingTime += (getSClock() - job->enterWaitingTime); //tempo de espera
 }

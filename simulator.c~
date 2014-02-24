@@ -70,8 +70,6 @@ void runSimulator(Simulator* simulator)
 	float waitingRate = 0;
 
 	srand (time(NULL));
-	waitingRate = (float)(rand() / (float) RAND_MAX);
-
 
 	pthread_mutex_lock(&simulator->mux);
 		flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);
@@ -105,6 +103,7 @@ void runSimulator(Simulator* simulator)
 			iteratorStart(simulator->waitingQueue);
 			while ((iterator = iteratorNext(simulator->waitingQueue)) != NULL)
 			{
+				waitingRate = (float)(rand() / (float) RAND_MAX);
 				job = (Job*) iterator->value;
 			
 				if(waitingRate <= LOCKED_RATE)
@@ -112,7 +111,7 @@ void runSimulator(Simulator* simulator)
 					job->status = ALREADY;
 					 /*adiciona na lista de prontos em ordem não crescente de prioridades*/
 					insertionSort(simulator->alreadyQueue, job, ((float*) &job->priority), DECRESCENT);
-					removeByValue(simulator->waitingQueue, job); /*remove da lista de criados*/
+					removeByValue(simulator->waitingQueue, job); /*remove da lista de bloqueados*/
 				}
 			}
 
@@ -125,10 +124,10 @@ void runSimulator(Simulator* simulator)
 	
 			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);
 
-			printf("\n simulator->alreadyQueue->size: %d", simulator->alreadyQueue->size);
-			//printf("\n simulator->waitingQueue->size: %d", simulator->waitingQueue->size);
-			//printf("\n simulator->finishedQueue->size: %d", simulator->finishedQueue->size);
-			//printf("\n simulator->createdsQueue->size: %d", simulator->createdsQueue->size);
+			printf("\n\t simulator->alreadyQueue->size: %d", simulator->alreadyQueue->size);
+			printf("\n\t simulator->waitingQueue->size: %d", simulator->waitingQueue->size);
+			printf("\n\t simulator->finishedQueue->size: %d", simulator->finishedQueue->size);
+			printf("\n\t simulator->createdsQueue->size: %d", simulator->createdsQueue->size);
 		pthread_mutex_unlock(&simulator->mux);
 	}
 }

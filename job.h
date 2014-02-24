@@ -33,9 +33,10 @@ dL'essentiel est invisible pour les yeux
 		float turnaroundTime;
 		float waitingTime;
 		float responseTime;
+		//float CPUTime;
 		unsigned int currentStep;
 
-		float enterWaitingQueueTime; //último instante que o job entrou para a fila de espera*/
+		float enterWaitingTime; //último instante que o job entrou para a fila de espera*/
 
 		void (*function)();
 
