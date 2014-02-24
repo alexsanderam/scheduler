@@ -4,7 +4,7 @@ Instituto Multidisciplinar.
 Departamento de Tecnologia e Linguagens.
 Curso de Ciência da Computaćão.
 
-Autores: Alexsander Andrade de Melo, Renan Sies Gomes e Ygor de Mello Canalli.
+Autores: Alexsander Andrade de Melo, Renan Gomes da Silva Sies e Ygor de Mello Canalli.
 Data (última atualização): 22/02/2014
 
 dL'essentiel est invisible pour les yeux
@@ -58,16 +58,6 @@ void startSimulator(Simulator* simulator)
 		startCore(core);
 	}
 
-	/*join threads -----------------------------------------------------*/
-	/*iteratorStart(cores);
-	while ((iterator = iteratorNext(cores)) != NULL)
-	{
-		core = (Core*) iterator->value;
-
-    	pthread_join(*core->t, NULL);
-   	}*/	
-	/* -----------------------------------------------------------------*/
-
 	runSimulator(simulator);
 }
 
@@ -77,11 +67,18 @@ void runSimulator(Simulator* simulator)
 	unsigned int timer;
 	Node* iterator;
 	Job* job;
+	float waitingRate = 0;
+
+	srand (time(NULL));
+	waitingRate = (float)(rand() / (float) RAND_MAX);
+
 
 	pthread_mutex_lock(&simulator->mux);
 		flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);
 	pthread_mutex_unlock(&simulator->mux);
 
+
+	/*inicializa o 'clock' do simulador*/
 	startSClock();
 	
 	while(flag)
@@ -90,6 +87,7 @@ void runSimulator(Simulator* simulator)
 
 			timer = getSClock();
 
+			/*da lista de novos para a lista de prontos*/
 			iteratorStart(simulator->createdsQueue);
 			while ((iterator = iteratorNext(simulator->createdsQueue)) != NULL)
 			{
@@ -103,12 +101,34 @@ void runSimulator(Simulator* simulator)
 				}
 			}
 
+			/*da lista de bloqueados para a lista de prontos*/
+			iteratorStart(simulator->waitingQueue);
+			while ((iterator = iteratorNext(simulator->waitingQueue)) != NULL)
+			{
+				job = (Job*) iterator->value;
+			
+				if(waitingRate <= LOCKED_RATE)
+				{
+					job->status = ALREADY;
+					 /*adiciona na lista de prontos em ordem não crescente de prioridades*/
+					insertionSort(simulator->alreadyQueue, job, ((float*) &job->priority), DECRESCENT);
+					removeByValue(simulator->waitingQueue, job); /*remove da lista de criados*/
+				}
+			}
+
+
 			/*delay do clock*/
 			usleep(DELAY_SCLOCK);
-			if(simulator->alreadyQueue->size > 0)
-				scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
+
+			//if(simulator->alreadyQueue->size > 0)
+			scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
 	
 			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);
+
+			//printf("\n simulator->alreadyQueue->size: %d", simulator->alreadyQueue->size);
+			//printf("\n simulator->waitingQueue->size: %d", simulator->waitingQueue->size);
+			//printf("\n simulator->finishedQueue->size: %d", simulator->finishedQueue->size);
+			//printf("\n simulator->createdsQueue->size: %d", simulator->createdsQueue->size);
 		pthread_mutex_unlock(&simulator->mux);
 	}
 }
@@ -136,9 +156,9 @@ void closeSimulator(Simulator* simulator)
 
 void showBenchMarkResults(Simulator* simulator)
 {
-		pthread_mutex_lock(&simulator->mux);
-			printJobs(simulator->finishedQueue);
-		pthread_mutex_unlock(&simulator->mux);
+	pthread_mutex_lock(&simulator->mux);
+		printJobs(simulator->finishedQueue);
+	pthread_mutex_unlock(&simulator->mux);
 }
 
 

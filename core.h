@@ -4,7 +4,7 @@ Instituto Multidisciplinar.
 Departamento de Tecnologia e Linguagens.
 Curso de Ciência da Computaćão.
 
-Autores: Alexsander Andrade de Melo, Renan Sies Gomes e Ygor de Mello Canalli.
+Autores: Alexsander Andrade de Melo, Renan Gomes da Silva Sies e Ygor de Mello Canalli.
 Data (última atualização): 22/02/2014
 
 dL'essentiel est invisible pour les yeux
@@ -31,6 +31,7 @@ dL'essentiel est invisible pour les yeux
 
     typedef struct 
 	{
+		unsigned int id;
 		float frequency;
 		Job* currentJob;
 
@@ -47,6 +48,7 @@ dL'essentiel est invisible pour les yeux
 	void* runCore(void*);
 	void updateStatus(Job*);
 	void assignToCore(Core*, Job*);
+	void wakeUpCore(Core*);
 
 	
 #endif

@@ -4,13 +4,15 @@ Instituto Multidisciplinar.
 Departamento de Tecnologia e Linguagens.
 Curso de Ciência da Computaćão.
 
-Autores: Alexsander Andrade de Melo, Renan Sies Gomes e Ygor de Mello Canalli.
+Autores: Alexsander Andrade de Melo, Renan Gomes da Silva Sies e Ygor de Mello Canalli.
 Data (última atualização): 22/02/2014
 
 dL'essentiel est invisible pour les yeux
 */
 
 #include "core.h"
+
+unsigned int nextID = 0;
 
 /*
 	Entrada: frequência e cache do core a ser criado
@@ -23,6 +25,7 @@ Core* createCore(float frequency, Cache* cache)
 	core->frequency = frequency;
 	core->cache = cache;
 	core->currentJob = NULL;
+	core->id = nextID++;
 
 	return core;
 }
@@ -54,11 +57,8 @@ void* runCore(void* c)
 		/*delay do clock de acordo com a frequência do core*/
 		usleep(((float) 1/(core->frequency)) * DELAY_SCLOCK);
 
-		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED))
-		{
+		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED) || (core->currentJob->status == WAITING))
 			sem_wait(&core->sem); /*decrementa o semáfaro*/
-			//sem_post(&core->sem); /*incrementa o semáfaro*/
-		}
 
 		/*garante acesso exclusivo*/
 		pthread_mutex_lock(&core->mux);
@@ -88,6 +88,12 @@ void* runCore(void* c)
 }
 
 
+void wakeUpCore(Core* core)
+{
+	sem_post(&core->sem);
+}
+
+
 /*
 	Atualiza o estado de um job.
 	Warning: esta função subentende que a exclusão mútua
@@ -95,17 +101,17 @@ void* runCore(void* c)
 */
 void updateStatus(Job* j)
 {
-	float lockedRate;
+	float waitingRate = 0;
 
 	srand (time(NULL));
-	lockedRate = rand();
+	waitingRate = (float)(rand() / (float) RAND_MAX);
 
 	if((j->status == RUNNING) && (j->currentStep == j->service_time))
 	{
 		j->status = FINISHED;
 		j->turnaroundTime = getSClock() - j->arrival_time; //tempo atual menos o tempo de chegado na fila de prontos
 	}
-	else if((j->status == RUNNING) && (lockedRate >= LOCKED_RATE))
+	else if((j->status == RUNNING) && (waitingRate >= LOCKED_RATE))
 	{
 		j->enterWaitingQueueTime = getSClock();
 		j->status = WAITING;
@@ -115,14 +121,11 @@ void updateStatus(Job* j)
 
 /*
 	Atribui um job ao core
+	Warning: esta função subentende que a exclusão mútua
 */
 void assignToCore(Core* core, Job* job)
 {
-	sem_wait(&core->sem);
 		core->currentJob = job;
 		job->status = RUNNING;
-
 		job->waitingTime += (getSClock() - job->enterWaitingQueueTime); //tempo de espera
-
-	sem_post(&core->sem);
 }
