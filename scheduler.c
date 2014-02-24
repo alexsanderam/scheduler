@@ -42,7 +42,6 @@ void scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finis
 					core->currentJob = job;
 
 					sem_post(&core->sem);
-					printJob(*core->currentJob);
 
 					/*remove da lista de prontos o job selecionado*/
 					removeByValue(alreadyQueue, core->currentJob);

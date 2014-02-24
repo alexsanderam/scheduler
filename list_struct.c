@@ -303,6 +303,8 @@ void removeByPredecessor(List* list, Node* predecessor)
 		/*Se o Node predecessor não é NULL então remove o elemento seguinte, caso este também não seja nulo*/		
 		if ((predecessor != NULL) && (predecessor->next != NULL))
 		{	
+			printf("\nnext == null? %d \tnext->next == null? %d", predecessor->next == NULL, predecessor->next->next == NULL);
+
 			Node* aux = predecessor->next;
 			predecessor->next = predecessor->next->next;
 			
@@ -310,7 +312,7 @@ void removeByPredecessor(List* list, Node* predecessor)
 			if(aux == list->tail)
 				list->tail = predecessor;
 
-			//free(aux);
+			free(aux);
 			list->size--;
 		}
 	} 
@@ -382,7 +384,7 @@ void removeByValue(List* list, void (*value))
 
 			//Se elemento desejado foi localizado (se não chegou ao final da lista sem encontrar)
 			if(predecessor->next->value == value);
-				removeByPredecessor(list, predecessor);		
+				removeByPredecessor(list, predecessor);	
 		}
 	}
 }
