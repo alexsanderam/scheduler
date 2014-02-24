@@ -20,6 +20,7 @@ dL'essentiel est invisible pour les yeux
     #include <stdlib.h>
 	#include <unistd.h>
 	#include <pthread.h>
+	#include <semaphore.h>
 	#include <sys/types.h>
 	#include <sys/syscall.h>
 	#include <time.h>
@@ -36,7 +37,8 @@ dL'essentiel est invisible pour les yeux
 		Cache* cache;
 
 		pthread_t* t; /*thread*/
-		pthread_mutex_t mux; /*mutex*/
+		//pthread_mutex_t mux; /*mutex*/
+		sem_t sem; /*semáfaro*/
 
     } Core;
 

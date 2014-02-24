@@ -74,6 +74,7 @@ void startSimulator(Simulator* simulator)
 void runSimulator(Simulator* simulator)
 {
 	unsigned int flag = 0;
+	unsigned int timer;
 	Node* iterator;
 	Job* job;
 
@@ -87,12 +88,14 @@ void runSimulator(Simulator* simulator)
 	{
 		pthread_mutex_lock(&simulator->mux);
 
+			timer = getSClock();
+
 			iteratorStart(simulator->createdsQueue);
 			while ((iterator = iteratorNext(simulator->createdsQueue)) != NULL)
 			{
 				job = (Job*) iterator->value;
 			
-				if(job->arrival_time >= getSClock())
+				if(job->arrival_time >= timer)
 				{
 					 /*adiciona na lista de prontos em ordem não crescente de prioridades*/
 					insertionSort(simulator->alreadyQueue, job, ((float*) &job->priority), DECRESCENT);
@@ -102,9 +105,8 @@ void runSimulator(Simulator* simulator)
 
 			/*delay do clock*/
 			usleep(DELAY_SCLOCK);
-
-			scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
-			
+			//scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
+	
 			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);// || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
 
 		pthread_mutex_unlock(&simulator->mux);
@@ -114,11 +116,20 @@ void runSimulator(Simulator* simulator)
 
 void closeSimulator(Simulator* simulator)
 {
-	//deveria matar os jobs também...
+	Node* iterator;
+	Core* core;
 
+	//deveria matar os jobs também...
 	clear(simulator->waitingQueue);
 	clear(simulator->finishedQueue);
 	clear(simulator->alreadyQueue);
+
+	while ((iterator = iteratorNext(simulator->cores)) != NULL)
+	{
+		core = (Core*) iterator->value;
+		sem_close(&core->sem);
+   	}
+
 	clear(simulator->cores);
 	
 }

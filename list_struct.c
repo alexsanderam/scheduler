@@ -412,6 +412,7 @@ void iteratorStart(List* list)
 */
 Node* iteratorNext(List* list)
 {
+
 	if(list->iterator != NULL)
 	{
 		Node* aux = list->iterator;
