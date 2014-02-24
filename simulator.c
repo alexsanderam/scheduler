@@ -120,9 +120,9 @@ void closeSimulator(Simulator* simulator)
 	Core* core;
 
 	//deveria matar os jobs também...
-	clear(simulator->waitingQueue);
-	clear(simulator->finishedQueue);
-	clear(simulator->alreadyQueue);
+	clearAll(simulator->waitingQueue);
+	clearAll(simulator->finishedQueue);
+	clearAll(simulator->alreadyQueue);
 
 	while ((iterator = iteratorNext(simulator->cores)) != NULL)
 	{
@@ -130,7 +130,7 @@ void closeSimulator(Simulator* simulator)
 		sem_close(&core->sem);
    	}
 
-	clear(simulator->cores);
+	clearAll(simulator->cores);
 	
 }
 

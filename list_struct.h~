@@ -56,6 +56,5 @@ Data (última atualização): 18/09/2013
 	void removeKNodesFromTail(List*, unsigned int);
 
     void clear(List*);
-	void clearAll(List*);
 
 #endif

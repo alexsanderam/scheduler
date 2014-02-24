@@ -304,7 +304,7 @@ void removeByPredecessor(List* list, Node* predecessor)
 		if ((predecessor != NULL) && (predecessor->next != NULL))
 		{	
 			Node* aux = predecessor->next;
-			//predecessor->next = predecessor->next->next;
+			predecessor->next = predecessor->next->next;
 			
 			//Atualiza a cauda, caso o elemento a ser removido seja a cauda
 			if(aux == list->tail)
@@ -402,7 +402,6 @@ void clear(List* list)
 	{
 		aux = iterator;
 		iterator = iterator->next;
-		free (aux->value);
 		free (aux);
 	}
 
@@ -410,6 +409,24 @@ void clear(List* list)
 	list->head = list->tail = NULL;
 }
 
+
+void clearAll(List* list)
+{
+	Node *iterator, *aux;
+	iterator = list->tail;
+
+	//Itera enquanto o iterador iterator é diferente de nulo, ou seja, até que chegue ao final da lista
+	while (iterator != NULL)
+	{
+		aux = iterator;
+		iterator = iterator->next;
+		free (aux->value);
+		free (aux);
+	}
+
+	list->size = 0;
+	list->head = list->tail = NULL;
+}
 
 /*
 	Entrada: List da qual se deseja inicializar o iterador 
