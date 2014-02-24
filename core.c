@@ -59,28 +59,30 @@ void* runCore(void* c)
 
 		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED) || (core->currentJob->status == WAITING))
 			sem_wait(&core->sem); /*decrementa o semáfaro*/
-
-		/*garante acesso exclusivo*/
-		pthread_mutex_lock(&core->mux);
-		j = core->currentJob;
-
-		if(j->responseTime == 0)
-			j->responseTime = getSClock(); //tempo de resposta
-
-		if (j->function != NULL)
+		else if(core->currentJob->currentStep < core->currentJob->service_time)
 		{
-			/*desbloqueia o acesso ao core*/
-			pthread_mutex_unlock(&core->mux);
-			j->function();
+			/*garante acesso exclusivo*/
+			pthread_mutex_lock(&core->mux);
+			j = core->currentJob;
+
+			if(j->responseTime == 0)
+				j->responseTime = getSClock(); //tempo de resposta
+
+			if (j->function != NULL)
+			{
+				/*desbloqueia o acesso ao core*/
+				pthread_mutex_unlock(&core->mux);
+				j->function();
+			}
+			else
+			{
+				j->currentStep++;
+				updateStatus(core);
+
+				/*desbloqueia o acesso ao core*/
+				pthread_mutex_unlock(&core->mux);
+			}		
 		}
-		else
-		{
-			j->currentStep++;
-			updateStatus(j);
-
-			/*desbloqueia o acesso ao core*/
-			pthread_mutex_unlock(&core->mux);
-		}		
 
 	}
 
@@ -90,7 +92,11 @@ void* runCore(void* c)
 
 void wakeUpCore(Core* core)
 {
-	sem_post(&core->sem);
+	int valueSem = 0;
+	sem_getvalue(&core->sem, &valueSem);
+	
+	if(valueSem < 0)
+		sem_post(&core->sem);
 }
 
 
@@ -99,20 +105,30 @@ void wakeUpCore(Core* core)
 	Warning: esta função subentende que a exclusão mútua
 	é garantida por quem a invoca.
 */
-void updateStatus(Job* j)
+void updateStatus(Core* core)
 {
+	Job* j = core->currentJob;
 	float waitingRate = 0;
 
 	srand (time(NULL));
 	waitingRate = (float)(rand() / (float) RAND_MAX);
 
-	if((j->status == RUNNING) && (j->currentStep == j->service_time))
+	printf("\n\nStep[%s :: %d]: %d / %d\n", j->name, j->status, j->currentStep, j->service_time);
+
+	if((j->status == RUNNING) && (j->currentStep >= j->service_time))
 	{
 		j->status = FINISHED;
-		j->turnaroundTime = j->waitingTime + j->currentStep; //tempo atual menos o tempo de chegado na fila de prontos
+		j->turnaroundTime = j->waitingTime + j->currentStep;
 	}
 	else if((j->status == RUNNING) && (waitingRate >= LOCKED_RATE))
+	{
 		j->status = WAITING;
+
+		/*desbloqueia o acesso ao core*/
+		//pthread_mutex_unlock(&core->mux);
+
+		//sem_wait(&core->sem);
+	}
 }
 
 
@@ -122,7 +138,7 @@ void updateStatus(Job* j)
 */
 void assignToCore(Core* core, Job* job)
 {
-		core->currentJob = job;
 		job->status = RUNNING;
 		job->waitingTime += (getSClock() - job->enterWaitingTime); //tempo de espera
+		core->currentJob = job;
 }

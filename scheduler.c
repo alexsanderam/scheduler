@@ -21,48 +21,34 @@ void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* fini
 
 	avg = avgCriterion(alreadyQueue);
 
-	//if(alreadyQueue->size == 0)
-		//return 0;
-
 	iteratorStart(cores);
 	while((iterator = iteratorNext(cores)) != NULL)
 	{
 		core = (Core*) iterator->value;
 
+		/*garante acesso exclusivo*/
+		pthread_mutex_lock(&core->mux);
+
 			if(alreadyQueue->size > 0)
 			{
-				/*garante acesso exclusivo*/
-				pthread_mutex_lock(&core->mux);
-
 				if(core->currentJob == NULL)
 				{
 					makeBasicScheduling(core, alreadyQueue);
 					wakeUpCore(core);
 				}
-				else if(core->currentJob->status == WAITING)
+				else if((core->currentJob->status == WAITING) || (core->currentJob->status == FINISHED))
 				{
 					makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue);
 					wakeUpCore(core);
 				}
 				else if((CURRENT_QUANTUM(core->currentJob->currentStep) >= QUANTUM) || ((SHEDULER_DECISION(core->currentJob->currentStep, avg)) == 0))
 					makeSchedulingGap(core, alreadyQueue);
-
-				/*libera o acesso ao core*/
-				pthread_mutex_unlock(&core->mux);
-			}			
-
-			if(core->currentJob->status == FINISHED)
-			{
-				/*garante acesso exclusivo*/
-				pthread_mutex_lock(&core->mux);
-
-				makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue);
-				wakeUpCore(core);
-
-				/*libera o acesso ao core*/
-				pthread_mutex_unlock(&core->mux);
 			}
+			else if(core->currentJob->status == FINISHED)
+				makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue);
 
+		/*libera o acesso ao core*/
+		pthread_mutex_unlock(&core->mux);
 	}
 
 	return 0;
@@ -71,19 +57,16 @@ void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* fini
 
 void makeBasicScheduling(Core* core, List* alreadyQueue)
 {
+	Job* job;
+
 	if(core->currentJob != NULL)
 		core->currentJob->enterWaitingTime = getSClock();
-
-	Job* job;
 
 	/*obtém o job que mais atendeu o critério de escalonamento*/
 	job = getGreatestCriterionJob(alreadyQueue);
 
 	if(job != NULL)
-	{
 		assignToCore(core, job);
-		//printf("\n<Atribuiu>[%d] o job: %s - %d", core->id, job->name, getSClock());
-	}
 }
 
 
@@ -93,11 +76,6 @@ void makeSchedulingDueStatusJob(Core* core, List* alreadyQueue, List* waitingQue
 		add(waitingQueue, core->currentJob);
 	else if(core->currentJob->status == FINISHED)
 		add(finishedQueue, core->currentJob);
-
-	//if(core->currentJob->status == WAITING)
-		//printf("\n[WAITING]: o job:: %s - time: %d", core->currentJob->name, getSClock());
-	//else
-		//printf("\n[FINISHED]: o job:: %s - time: %d", core->currentJob->name, getSClock());
 
 	makeBasicScheduling(core, alreadyQueue);
 }

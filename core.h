@@ -46,7 +46,7 @@ dL'essentiel est invisible pour les yeux
 	Core* createCore(float, Cache*);
 	void startCore(Core*);
 	void* runCore(void*);
-	void updateStatus(Job*);
+	void updateStatus(Core*);
 	void assignToCore(Core*, Job*);
 	void wakeUpCore(Core*);
 

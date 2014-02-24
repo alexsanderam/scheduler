@@ -96,6 +96,7 @@ void runSimulator(Simulator* simulator)
 					 /*adiciona na lista de prontos em ordem não crescente de prioridades*/
 					insertionSort(simulator->alreadyQueue, job, ((float*) &job->priority), DECRESCENT);
 					removeByValue(simulator->createdsQueue, job); /*remove da lista de criados*/
+					printf("\n\t\t::: simulator->alreadyQueue->size: %d", simulator->alreadyQueue->size);
 				}
 			}
 
@@ -108,10 +109,13 @@ void runSimulator(Simulator* simulator)
 			
 				if(waitingRate <= LOCKED_RATE)
 				{
+					printf("\n\n\n\t\t>>simulator->waitingQueue->size: %d", simulator->waitingQueue->size);
 					job->status = ALREADY;
 					 /*adiciona na lista de prontos em ordem não crescente de prioridades*/
 					insertionSort(simulator->alreadyQueue, job, ((float*) &job->priority), DECRESCENT);
 					removeByValue(simulator->waitingQueue, job); /*remove da lista de bloqueados*/
+					printf("\n\t\t>>simulator->alreadyQueue->size: %d", simulator->alreadyQueue->size);
+					printf("\n\t\t>>simulator->waitingQueue->size: %d\n\n", simulator->waitingQueue->size);
 				}
 			}
 
@@ -119,7 +123,6 @@ void runSimulator(Simulator* simulator)
 			/*delay do clock*/
 			usleep(DELAY_SCLOCK);
 
-			//if(simulator->alreadyQueue->size > 0)
 			scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
 	
 			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);

@@ -48,6 +48,7 @@ dL'essentiel est invisible pour les yeux
 	void* runCore(void*);
 	void updateStatus(Job*);
 	void assignToCore(Core*, Job*);
+	void wakeUpCore(Core*);
 
 	
 #endif
