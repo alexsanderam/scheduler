@@ -293,10 +293,11 @@ Node* find(List list, void (*value))
 
 /*
 	Entrada: Lista, índice da posição do elemento que se deseja remover
-	Efeito: Remove o elemento que se encontra na posição posterior ao predecessor
+	Efeito: Remove o elemento que se encontra na posição index
 */
 void removeByPredecessor(List* list, Node* predecessor)
 {
+	
 	//Verifica se a lista está vazia
 	if (!isEmpty(*list))
 	{
@@ -304,13 +305,13 @@ void removeByPredecessor(List* list, Node* predecessor)
 		if ((predecessor != NULL) && (predecessor->next != NULL))
 		{	
 			Node* aux = predecessor->next;
-			//predecessor->next = predecessor->next->next;
+			predecessor->next = predecessor->next->next;
 			
 			//Atualiza a cauda, caso o elemento a ser removido seja a cauda
 			if(aux == list->tail)
 				list->tail = predecessor;
 
-			//free(aux);
+			free(aux);
 			list->size--;
 		}
 	} 
@@ -327,14 +328,6 @@ void removeByIndex(List* list, int index)
 
 	if ((list->size == 1) && (index == 0))
 		clear(list);
-	else if(index == 0)
-	{
-		Node* aux = list->head;
-		list->head = list->head->next;
-			
-		free(aux);
-		list->size--;
-	}
 	else
 	{
 		//Encontra pelo índice index o elemento predecessor
@@ -361,18 +354,9 @@ void removeByValue(List* list, void (*value))
 		//Se a lista só possui um elemento	
 		if(list->size == 1)
 		{
-			//Se a cabeça da lista possui o valor desejado, retorne seu ponteiro, caso contrairo, retorne NULL
+			//Se a cabeça da lista possui valor desejado, retorne seu ponteiro, caso contrairo, retorne NULL
 			if (list->head->value == value)
 				clear(list);
-		}
-		//Se o valor está na cabeça, mas a lista tem mais elementos
-		else if(list->head->value == value)
-		{
-			Node* aux = list->head;
-			list->head = list->head->next;
-			
-			free(aux);
-			list->size--;
 		}
 		//Se a lista possui mais que um elemento
 		else
@@ -381,7 +365,7 @@ void removeByValue(List* list, void (*value))
 			for(predecessor = list->head; ((predecessor->next != list->tail) && (predecessor->next->value != value)); predecessor = predecessor->next);
 
 			//Se elemento desejado foi localizado (se não chegou ao final da lista sem encontrar)
-			if(predecessor->next->value == value);
+			if(predecessor->next->value == value)	
 				removeByPredecessor(list, predecessor);		
 		}
 	}

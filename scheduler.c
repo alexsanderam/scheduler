@@ -20,7 +20,6 @@ void scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finis
 	Core* core;
 	Node* iterator;
 	Job* job;
-	int valueSemaphore = 0;
 
 	float avg = avgCriterion(alreadyQueue);
 		
@@ -29,12 +28,10 @@ void scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finis
 		iteratorStart(cores);
 		while((iterator = iteratorNext(cores)) != NULL)
 		{
-			core = (Core*) iterator->value;
+				core = (Core*) iterator->value;
 
-				/*bloqueia o acesso ao core*/
-				sem_getvalue(&core->sem, &valueSemaphore);
-				if(valueSemaphore > 0)
-					sem_wait(&core->sem);
+				/*garante acesso exclusivo*/
+				pthread_mutex_lock(&core->mux);
 
 				/*casos que realizam a troca de job no core*/
 				if(core->currentJob == NULL)
@@ -43,6 +40,8 @@ void scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finis
 					job = getGreatestCriterionJob(alreadyQueue);
 					job->status = RUNNING;
 					core->currentJob = job;
+
+					sem_post(&core->sem);
 
 					/*remove da lista de prontos o job selecionado*/
 					removeByValue(alreadyQueue, core->currentJob);
@@ -54,7 +53,10 @@ void scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finis
 
 					/*adiciona na lista de destino o job atual*/
 					if(core->currentJob->status == FINISHED)
+					{
 						add(finishedQueue, core->currentJob);
+						sem_post(&core->sem);
+					}
 
 					else if(core->currentJob->status == WAITING)
 						add(waitingQueue, core->currentJob);
@@ -66,11 +68,12 @@ void scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finis
 					core->currentJob = job;
 		
 					/*remove da lista de prontos o job selecionado*/
-					removeByValue(alreadyQueue, core->currentJob);
+					//removeByValue(alreadyQueue, core->currentJob);
 				}
 
+
 				/*desbloqueia o acesso ao core*/
-				sem_post(&core->sem);
+				pthread_mutex_unlock(&core->mux);
 		}
 	}
 }

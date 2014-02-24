@@ -105,7 +105,7 @@ void runSimulator(Simulator* simulator)
 
 			/*delay do clock*/
 			usleep(DELAY_SCLOCK);
-			//scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
+			scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
 	
 			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);// || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
 

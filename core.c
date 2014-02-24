@@ -35,7 +35,7 @@ void startCore(Core* core)
 {
 	core->t = (pthread_t*) malloc (sizeof(pthread_t));
 	sem_init(&core->sem, 0, 0); /*Inicializa o semáfaro com valor 0 para threads*/
-	//pthread_mutex_init(&core->mux, NULL); /*inicializa mutex do core*/
+	pthread_mutex_init(&core->mux, NULL); /*inicializa mutex do core*/
 	pthread_create(core->t, NULL, runCore, (void*) core);
 }
 
@@ -51,15 +51,17 @@ void* runCore(void* c)
 	while(1)
 	{
 
-		/*delay do clock*/
-		//usleep(((float) 1/(core->frequency)) * DELAY_SCLOCK);
+		/*delay do clock de acordo com a frequência do core*/
+		usleep(((float) 1/(core->frequency)) * DELAY_SCLOCK);
 
 		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED))
 		{
-			printf("\nbloqueou!");
 			sem_wait(&core->sem); /*decrementa o semáfaro*/
+			//sem_post(&core->sem); /*incrementa o semáfaro*/
 		}
 
+		/*garante acesso exclusivo*/
+		pthread_mutex_lock(&core->mux);
 		j = core->currentJob;
 
 		if(j->responseTime == 0)
@@ -68,7 +70,7 @@ void* runCore(void* c)
 		if (j->function != NULL)
 		{
 			/*desbloqueia o acesso ao core*/
-			sem_post(&core->sem); /*incrementa o semáfaro*/
+			pthread_mutex_unlock(&core->mux);
 			j->function();
 		}
 		else
@@ -77,7 +79,7 @@ void* runCore(void* c)
 			updateStatus(j);
 
 			/*desbloqueia o acesso ao core*/
-			sem_post(&core->sem); /*incrementa o semáfaro*/
+			pthread_mutex_unlock(&core->mux);
 		}		
 
 	}

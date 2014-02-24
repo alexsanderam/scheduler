@@ -34,10 +34,9 @@ Core* createCore(float frequency, Cache* cache)
 void startCore(Core* core)
 {
 	core->t = (pthread_t*) malloc (sizeof(pthread_t));
-	
-	pthread_mutex_init(&core->mux, NULL); /*inicializa mutex do core*/
+	sem_init(&core->sem, 0, 0); /*Inicializa o semáfaro com valor 0 para threads*/
+	//pthread_mutex_init(&core->mux, NULL); /*inicializa mutex do core*/
 	pthread_create(core->t, NULL, runCore, (void*) core);
-	free(core->t);
 }
 
 
@@ -52,31 +51,35 @@ void* runCore(void* c)
 	while(1)
 	{
 
-		/*bloqueia o acesso ao core*/
-		pthread_mutex_lock(&core->mux);
+		/*delay do clock*/
+		//usleep(((float) 1/(core->frequency)) * DELAY_SCLOCK);
+
+		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED))
+		{
+			printf("\nbloqueou!");
+			sem_wait(&core->sem); /*decrementa o semáfaro*/
+		}
+
 		j = core->currentJob;
 
-		if((j != NULL) && (j->status != FINISHED))
+		if(j->responseTime == 0)
+			j->responseTime = getSClock(); //tempo de resposta
+
+		if (j->function != NULL)
 		{
-				if(j->responseTime == 0)
-					j->responseTime = getSClock(); //tempo de resposta
-
-			if (j->function != NULL)
-			{
-				/*desbloqueia o acesso ao core*/
-				pthread_mutex_unlock(&core->mux);
-				j->function();
-			}
-			else
-			{
-
-				j->currentStep++;
-				updateStatus(j);
-
-				/*desbloqueia o acesso ao core*/
-				pthread_mutex_unlock(&core->mux);
-			}		
+			/*desbloqueia o acesso ao core*/
+			sem_post(&core->sem); /*incrementa o semáfaro*/
+			j->function();
 		}
+		else
+		{
+			j->currentStep++;
+			updateStatus(j);
+
+			/*desbloqueia o acesso ao core*/
+			sem_post(&core->sem); /*incrementa o semáfaro*/
+		}		
+
 	}
 
 	return 0;
@@ -113,11 +116,11 @@ void updateStatus(Job* j)
 */
 void assignToCore(Core* core, Job* job)
 {
-	pthread_mutex_lock(&core->mux);
+	sem_wait(&core->sem);
 		core->currentJob = job;
 		job->status = RUNNING;
 
 		job->waitingTime += (getSClock() - job->enterWaitingQueueTime); //tempo de espera
 
-	pthread_mutex_unlock(&core->mux);
+	sem_post(&core->sem);
 }

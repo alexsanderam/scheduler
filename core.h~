@@ -37,7 +37,7 @@ dL'essentiel est invisible pour les yeux
 		Cache* cache;
 
 		pthread_t* t; /*thread*/
-		pthread_mutex_t mux; /*mutex*/
+		//pthread_mutex_t mux; /*mutex*/
 		sem_t sem; /*semáfaro*/
 
     } Core;
