@@ -303,8 +303,6 @@ void removeByPredecessor(List* list, Node* predecessor)
 		/*Se o Node predecessor não é NULL então remove o elemento seguinte, caso este também não seja nulo*/		
 		if ((predecessor != NULL) && (predecessor->next != NULL))
 		{	
-			printf("\nnext == null? %d \tnext->next == null? %d", predecessor->next == NULL, predecessor->next->next == NULL);
-
 			Node* aux = predecessor->next;
 			predecessor->next = predecessor->next->next;
 			

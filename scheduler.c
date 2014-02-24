@@ -23,57 +23,53 @@ void scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finis
 
 	float avg = avgCriterion(alreadyQueue);
 		
-	if(alreadyQueue->size != 0)
+	iteratorStart(cores);
+	while((alreadyQueue->size != 0) && ((iterator = iteratorNext(cores)) != NULL))
 	{
-		iteratorStart(cores);
-		while((iterator = iteratorNext(cores)) != NULL)
-		{
-				core = (Core*) iterator->value;
-
-				/*garante acesso exclusivo*/
-				pthread_mutex_lock(&core->mux);
-
-				/*casos que realizam a troca de job no core*/
-				if(core->currentJob == NULL)
-				{
-					/*obtém o job que mais atendeu o critério de escalonamento*/
-					job = getGreatestCriterionJob(alreadyQueue);
-					job->status = RUNNING;
-					core->currentJob = job;
-
-					sem_post(&core->sem);
-
-					/*remove da lista de prontos o job selecionado*/
-					removeByValue(alreadyQueue, core->currentJob);
-				}
-				else if((CURRENT_QUANTUM(core->currentJob->currentStep) >= QUANTUM) || ((SHEDULER_DECISION(core->currentJob->currentStep, avg)) == 0))
-				{
-					/*obtém o job que mais atendeu o critério de escalonamento*/
-					job = getGreatestCriterionJob(alreadyQueue);
-
-					/*adiciona na lista de destino o job atual*/
-					if(core->currentJob->status == FINISHED)
-					{
-						add(finishedQueue, core->currentJob);
-						sem_post(&core->sem);
-					}
-
-					else if(core->currentJob->status == WAITING)
-						add(waitingQueue, core->currentJob);
-
-					else
-						add(alreadyQueue, core->currentJob);	
+		core = (Core*) iterator->value;
 	
-					job->status = RUNNING;
-					core->currentJob = job;
-		
-					/*remove da lista de prontos o job selecionado*/
-					removeByValue(alreadyQueue, core->currentJob);
-				}
+		/*garante acesso exclusivo*/
+		pthread_mutex_lock(&core->mux);
 
+		/*casos que realizam a troca de job no core*/
+		if(core->currentJob == NULL)
+		{
+			/*obtém o job que mais atendeu o critério de escalonamento*/
+			job = getGreatestCriterionJob(alreadyQueue);
+			if(job != NULL)
+			{
+				/*remove da lista de prontos o job selecionado*/
+				removeByValue(alreadyQueue, core->currentJob);
 
-				/*desbloqueia o acesso ao core*/
-				pthread_mutex_unlock(&core->mux);
+				assignToCore(core, job);
+				sem_post(&core->sem);
+			}
+		}
+		else if((CURRENT_QUANTUM(core->currentJob->currentStep) >= QUANTUM) || ((SHEDULER_DECISION(core->currentJob->currentStep, avg)) == 0))
+		{
+			/*obtém o job que mais atendeu o critério de escalonamento*/
+			job = getGreatestCriterionJob(alreadyQueue);
+
+			/*adiciona na lista de destino o job atual*/
+			if(core->currentJob->status == FINISHED)
+			{
+				add(finishedQueue, core->currentJob);
+				sem_post(&core->sem);
+			}
+
+			else if(core->currentJob->status == WAITING)
+				add(waitingQueue, core->currentJob);
+
+			else
+				add(alreadyQueue, core->currentJob);	
+
+			/*desbloqueia o acesso ao core*/
+			pthread_mutex_unlock(&core->mux);
+
+			assignToCore(core, job);
+
+			/*remove da lista de prontos o job selecionado*/
+			removeByValue(alreadyQueue, core->currentJob);
 		}
 	}
 }
@@ -97,7 +93,7 @@ Job* getGreatestCriterionJob(List* alreadyQueue)
 		remainingTime = job->currentStep - job->service_time;
 		jobQuantum = CURRENT_QUANTUM(job->currentStep);
 		
-		if((criterion = SHEDULER_CRITERION(job->priority, remainingTime, jobQuantum)) > maxCriterion)
+		if((criterion = SHEDULER_CRITERION(job->priority, remainingTime, jobQuantum)) >= maxCriterion)
 		{
 			maxCriterion = criterion;
 			theJob = job;

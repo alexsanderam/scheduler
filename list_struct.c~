@@ -293,11 +293,10 @@ Node* find(List list, void (*value))
 
 /*
 	Entrada: Lista, índice da posição do elemento que se deseja remover
-	Efeito: Remove o elemento que se encontra na posição index
+	Efeito: Remove o elemento que se encontra na posição posterior ao predecessor
 */
 void removeByPredecessor(List* list, Node* predecessor)
 {
-	
 	//Verifica se a lista está vazia
 	if (!isEmpty(*list))
 	{
@@ -328,6 +327,14 @@ void removeByIndex(List* list, int index)
 
 	if ((list->size == 1) && (index == 0))
 		clear(list);
+	else if(index == 0)
+	{
+		Node* aux = list->head;
+		list->head = list->head->next;
+			
+		free(aux);
+		list->size--;
+	}
 	else
 	{
 		//Encontra pelo índice index o elemento predecessor
@@ -354,9 +361,18 @@ void removeByValue(List* list, void (*value))
 		//Se a lista só possui um elemento	
 		if(list->size == 1)
 		{
-			//Se a cabeça da lista possui valor desejado, retorne seu ponteiro, caso contrairo, retorne NULL
+			//Se a cabeça da lista possui o valor desejado, retorne seu ponteiro, caso contrairo, retorne NULL
 			if (list->head->value == value)
 				clear(list);
+		}
+		//Se o valor está na cabeça, mas a lista tem mais elementos
+		else if(list->head->value == value)
+		{
+			Node* aux = list->head;
+			list->head = list->head->next;
+			
+			free(aux);
+			list->size--;
 		}
 		//Se a lista possui mais que um elemento
 		else
@@ -365,8 +381,8 @@ void removeByValue(List* list, void (*value))
 			for(predecessor = list->head; ((predecessor->next != list->tail) && (predecessor->next->value != value)); predecessor = predecessor->next);
 
 			//Se elemento desejado foi localizado (se não chegou ao final da lista sem encontrar)
-			if(predecessor->next->value == value)	
-				removeByPredecessor(list, predecessor);		
+			if(predecessor->next->value == value);
+				removeByPredecessor(list, predecessor);	
 		}
 	}
 }
@@ -386,7 +402,6 @@ void clear(List* list)
 	{
 		aux = iterator;
 		iterator = iterator->next;
-		free (aux->value);
 		free (aux);
 	}
 
@@ -394,6 +409,24 @@ void clear(List* list)
 	list->head = list->tail = NULL;
 }
 
+
+void clearAll(List* list)
+{
+	Node *iterator, *aux;
+	iterator = list->tail;
+
+	//Itera enquanto o iterador iterator é diferente de nulo, ou seja, até que chegue ao final da lista
+	while (iterator != NULL)
+	{
+		aux = iterator;
+		iterator = iterator->next;
+		free (aux->value);
+		free (aux);
+	}
+
+	list->size = 0;
+	list->head = list->tail = NULL;
+}
 
 /*
 	Entrada: List da qual se deseja inicializar o iterador 

@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 		return 1;
 
 	simulator = newSimulator(argv[1], 4);
-	//printJobs(simulator->createdsQueue);
+	printJobs(simulator->createdsQueue);
 	startSimulator(simulator);
 	showBenchMarkResults(simulator);
 	closeSimulator(simulator);

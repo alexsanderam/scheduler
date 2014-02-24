@@ -79,7 +79,7 @@ void runSimulator(Simulator* simulator)
 	Job* job;
 
 	pthread_mutex_lock(&simulator->mux);
-		flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);// || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
+		flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);
 	pthread_mutex_unlock(&simulator->mux);
 
 	startSClock();
@@ -105,10 +105,10 @@ void runSimulator(Simulator* simulator)
 
 			/*delay do clock*/
 			usleep(DELAY_SCLOCK);
-			scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
+			if(simulator->alreadyQueue->size > 0)
+				scheduling(simulator->cores, simulator->alreadyQueue, simulator->waitingQueue, simulator->finishedQueue);
 	
-			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);// || (simulator->waitingQueue->size > 0) || (simulator->alreadyQueue->size > 0) || (simulator->createdsQueue->size > 0);
-
+			flag = (simulator->quantityOfJobs > simulator->finishedQueue->size);
 		pthread_mutex_unlock(&simulator->mux);
 	}
 }
