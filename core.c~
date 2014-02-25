@@ -53,37 +53,45 @@ void* runCore(void* c)
 
 	while(1)
 	{
-
 		/*delay do clock de acordo com a frequência do core*/
 		usleep(((float) 1/(core->frequency)) * DELAY_SCLOCK);
 
-		if((core->currentJob == NULL) || (core->currentJob->status == FINISHED) || (core->currentJob->status == WAITING))
-			sem_wait(&core->sem); /*decrementa o semáfaro*/
-		else if(core->currentJob->currentStep < core->currentJob->service_time)
+		/*garante acesso exclusivo*/
+		pthread_mutex_lock(&core->mux);
+
+		if(core->currentJob == NULL)
 		{
-			/*garante acesso exclusivo*/
+			pthread_mutex_unlock(&core->mux);
+			sem_wait(&core->sem); /*decrementa o semáfaro*/
 			pthread_mutex_lock(&core->mux);
-			j = core->currentJob;
-
-			if(j->responseTime == 0)
-				j->responseTime = getSClock(); //tempo de resposta
-
-			if (j->function != NULL)
-			{
-				/*desbloqueia o acesso ao core*/
-				pthread_mutex_unlock(&core->mux);
-				j->function();
-			}
-			else
-			{
-				j->currentStep++;
-				updateStatus(core);
-
-				/*desbloqueia o acesso ao core*/
-				pthread_mutex_unlock(&core->mux);
-			}		
 		}
 
+		j = core->currentJob;
+
+		if(j->responseTime == 0)
+			j->responseTime = getSClock(); //tempo de resposta
+
+		if (j->function != NULL)
+		{
+			pthread_mutex_unlock(&core->mux);
+			j->function();
+			pthread_mutex_lock(&core->mux);
+		}
+		else
+		{
+			j->currentStep++;			
+			updateStatus(core);
+		}
+
+		if((core->currentJob->status == FINISHED) || (core->currentJob->status == WAITING))
+		{
+			pthread_mutex_unlock(&core->mux);
+			sem_wait(&core->sem);
+			pthread_mutex_lock(&core->mux);
+		}
+
+		/*desbloqueia o acesso ao core*/
+		pthread_mutex_unlock(&core->mux);
 	}
 
 	return 0;
@@ -94,9 +102,8 @@ void wakeUpCore(Core* core)
 {
 	int valueSem = 0;
 	sem_getvalue(&core->sem, &valueSem);
-	
-	if(valueSem <= 0)
-		sem_post(&core->sem);
+
+	sem_post(&core->sem);
 }
 
 
@@ -115,20 +122,13 @@ void updateStatus(Core* core)
 
 	printf("\n\nStep[%s :: %d]: %d / %d\n", j->name, j->status, j->currentStep, j->service_time);
 
-	if((j->status == RUNNING) && (j->currentStep >= j->service_time))
+	if((j->status == RUNNING) && (j->currentStep == j->service_time))
 	{
 		j->status = FINISHED;
 		j->turnaroundTime = j->waitingTime + j->currentStep;
 	}
 	else if((j->status == RUNNING) && (waitingRate >= LOCKED_RATE))
-	{
 		j->status = WAITING;
-
-		/*desbloqueia o acesso ao core*/
-		//pthread_mutex_unlock(&core->mux);
-
-		//sem_wait(&core->sem);
-	}
 }
 
 
