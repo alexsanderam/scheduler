@@ -12,7 +12,7 @@ dL'essentiel est invisible pour les yeux
     #ifndef SIMULATOR_H
     #define SIMULATOR_H
 
-	#include "my_clock.h" 
+	#include "my_clock.h"
 	#include "list_struct.h"
 	#include "scheduler.h"
 	#include "core.h"
@@ -21,12 +21,7 @@ dL'essentiel est invisible pour les yeux
 	#include <stdlib.h>
 	#include <unistd.h>
 	#include <time.h>
-	#include <pthread.h>
-	#include <sys/types.h>
-	#include <sys/syscall.h>
 	#include "scheduler.h"
-
-	#define DELAY 50000 /*microsegundos*/
 
 
     typedef struct {
@@ -40,21 +35,15 @@ dL'essentiel est invisible pour les yeux
 
 		List* cores;	/*lista de cores*/
 
-		pthread_mutex_t mux; /*mutex*/
-
-		//unsigned int clock; /*utilizado para medir os tempos (tempo ideal, sem unidade definida)*/
-
     } Simulator;
 
 
 	Simulator* newSimulatorWithCores(char*, List*);
 	Simulator* newSimulator(char*, unsigned int);
-	void startSimulator(Simulator*);
-	void runSimulator(Simulator*);
+	void startSimulator(Simulator*, int);
 	void showBenchMarkResults(Simulator*);
 	void closeSimulator(Simulator*);
 	void printJobs(List*);
-	List* readJobsFromFile(char*);
 	
 
 #endif

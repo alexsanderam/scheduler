@@ -20,18 +20,21 @@ dL'essentiel est invisible pour les yeux
 
 	#define WP 2 	//peso do critério prioridade na decisão do escalonador
 	#define WSRT 1	//peso do critério SRT na decisão do escalonador
-	#define WQ 1	//peso do critério quantum na decisão do escalonador
+	#define WQ 2	//peso do critério quantum na decisão do escalonador
 
-	#define QUANTUM 5 //tamanho do quantum
+	#define QUANTUM 4 //tamanho do quantum
 
 	#define SHEDULER_CRITERION(P, SRT, Q) (WP*P + WSRT*SRT - WQ*Q) / (WP + WSRT - WQ)
 	#define SHEDULER_DECISION(CRITERION, AVG) CRITERION >= AVG
 	#define CURRENT_QUANTUM(CURRENT_STEP) CURRENT_STEP % QUANTUM
 
-	void* scheduling(List*, List*, List*, List*);
-	void makeBasicScheduling(Core*, List*);
-	void makeSchedulingDueStatusJob(Core*, List*, List*, List*);
-	void makeSchedulingGap(Core*, List*);
+	#define ROUND_ROB 0
+	#define MY_POLICY 1
+
+	void* scheduling(List*, List*, List*, List*, int);
+	void makeBasicScheduling(Core*, List*, int);
+	void makeSchedulingDueStatusJob(Core*, List*, List*, List*, int);
+	void makeSchedulingGap(Core*, List*, int);
 	Job* getGreatestCriterionJob(List*);
 	float avgCriterion(List*);
 

@@ -12,12 +12,23 @@ dL'essentiel est invisible pour les yeux
 
 #include "scheduler.h"
 
+unsigned int WP = 2; 	//peso do critério prioridade na decisão do escalonador
+unsigned int WSRT = 3;	//peso do critério SRT na decisão do escalonador
+unsigned int WQ = 5;	//peso do critério quantum na decisão do escalonador
 
-void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finishedQueue)
+unsigned int QUANTUM = 4; //tamanho do quantum
+
+
+void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finishedQueue, int policy)
 {
 	Core* core;
 	Node* iterator;	
 	float avg;
+
+	float criterion = 0;
+	int remainingTime = 0;
+	int jobQuantum = 0;
+
 
 	avg = avgCriterion(alreadyQueue);
 
@@ -26,64 +37,84 @@ void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* fini
 	{
 		core = (Core*) iterator->value;
 
-		/*garante acesso exclusivo*/
-		pthread_mutex_lock(&core->mux);
 
-			if(alreadyQueue->size > 0)
+		if(alreadyQueue->size > 0)
+		{
+			if(core->currentJob == NULL)
+				makeBasicScheduling(core, alreadyQueue, policy);
+
+			else if((core->currentJob->status == WAITING) || (core->currentJob->status == FINISHED))
+				makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue, policy);
+
+			else if((core->currentJob->currentStep > 0) && (CURRENT_QUANTUM(core->currentJob->currentStep) == 0))
+				makeSchedulingGap(core, alreadyQueue, policy);
+			
+			else if(policy ==  MY_POLICY)
 			{
-				if(core->currentJob == NULL)
-				{
-					makeBasicScheduling(core, alreadyQueue);
-					wakeUpCore(core);
-				}
-				else if((core->currentJob->status == WAITING) || (core->currentJob->status == FINISHED))
-				{
-					makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue);
-					wakeUpCore(core);
-				}
-				else if((CURRENT_QUANTUM(core->currentJob->currentStep) >= QUANTUM) || ((SHEDULER_DECISION(core->currentJob->currentStep, avg)) == 0))
-					makeSchedulingGap(core, alreadyQueue);
-			}
-			else if(core->currentJob->status == FINISHED)
-				makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue);
+				remainingTime = core->currentJob->service_time - core->currentJob->currentStep;
+				jobQuantum = CURRENT_QUANTUM(core->currentJob->currentStep);
+				criterion = SHEDULER_CRITERION(core->currentJob->priority, remainingTime, jobQuantum);
 
-		/*libera o acesso ao core*/
-		pthread_mutex_unlock(&core->mux);
-	}
+				printf("\nP: %d - WP: %d\tSRT: %d - WSRT: %d\tQ: %d - WQ: %d", core->currentJob->priority, WP, remainingTime, WSRT, jobQuantum, WQ);
+				printf("\tcriterion: %.2f \tavg: %.2f", criterion, avg);
+
+				if((SHEDULER_DECISION(criterion, avg)) == 0)
+					makeSchedulingGap(core, alreadyQueue, policy);
+			}
+		}
+		else if((core->currentJob != NULL) && ((core->currentJob->status == WAITING) || (core->currentJob->status == FINISHED)))
+		{
+			if(core->currentJob->status == WAITING)
+				add(waitingQueue, core->currentJob);
+			else if(core->currentJob->status == FINISHED)
+				add(finishedQueue, core->currentJob);
+
+			core->currentJob = NULL;
+		}
+	}	
 
 	return 0;
 }
 
 
-void makeBasicScheduling(Core* core, List* alreadyQueue)
+void makeBasicScheduling(Core* core, List* alreadyQueue, int policy)
 {
 	Job* job;
 
-	if(core->currentJob != NULL)
-		core->currentJob->enterWaitingTime = getSClock();
+	switch (policy)
+	{
+		case ROUND_ROB: 
+			job = (Job*) get(*alreadyQueue, 0)->value;
+			removeByIndex(alreadyQueue, 0);
+			break;
 
-	/*obtém o job que mais atendeu o critério de escalonamento*/
-	job = getGreatestCriterionJob(alreadyQueue);
+		default:
+			/*obtém o job que mais atendeu o critério de escalonamento*/
+			job = getGreatestCriterionJob(alreadyQueue);
+			break;
+	
+	}
 
-	if(job != NULL)
-		assignToCore(core, job);
+	//if(job != NULL)
+	assignToCore(core, job);
 }
 
 
-void makeSchedulingDueStatusJob(Core* core, List* alreadyQueue, List* waitingQueue, List* finishedQueue)
+void makeSchedulingDueStatusJob(Core* core, List* alreadyQueue, List* waitingQueue, List* finishedQueue, int policy)
 {
 	if(core->currentJob->status == WAITING)
 		add(waitingQueue, core->currentJob);
 	else if(core->currentJob->status == FINISHED)
 		add(finishedQueue, core->currentJob);
 
-	makeBasicScheduling(core, alreadyQueue);
+	makeBasicScheduling(core, alreadyQueue, policy);
 }
 
-void makeSchedulingGap(Core* core, List* alreadyQueue)
+void makeSchedulingGap(Core* core, List* alreadyQueue, int policy)
 {
+	core->currentJob->status = ALREADY;
 	add(alreadyQueue, core->currentJob);
-	makeBasicScheduling(core, alreadyQueue);
+	makeBasicScheduling(core, alreadyQueue, policy);
 }
 
 
@@ -130,9 +161,7 @@ float avgCriterion(List* alreadyJobs)
 
 
 	if(alreadyJobs->size == 0)
-	{
 		return 0;
-	}
 
 	iteratorStart(alreadyJobs);
 	while ((iterator = iteratorNext(alreadyJobs)) != NULL)
@@ -149,4 +178,39 @@ float avgCriterion(List* alreadyJobs)
 
 	return avg;
 
+}
+
+float N_WP()
+{	
+	return WP * (1.0 / (P_MAX - P_MIN));
+}
+
+
+float N_WSRT()
+{	
+	return WSRT * (1.0 / (SRT_MAX - SRT_MIN));
+}
+
+float N_WQ()
+{	
+	return WQ * (1.0 / QUANTUM);
+}
+
+int digit(int value)
+{
+	int i = 1;
+
+	while((value / i) > 0)
+		i *= 10;
+
+	return i / 10;
+}
+
+float SHEDULER_CRITERION(int P, int SRT, int Q)
+{
+	float NWP = N_WP();
+	float NWSRT = N_WSRT();
+	float NWQ = N_WQ();
+
+	return (NWP*P + NWSRT*(1.0/SRT)*digit(SRT_MAX) + NWQ*(1.0/(Q+1))*digit(QUANTUM)) / (NWP + NWSRT + NWQ);
 }

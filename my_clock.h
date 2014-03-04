@@ -12,19 +12,12 @@ Data (última atualização): 22/02/2014
 
 	#include <stdio.h>
 	#include <stdlib.h>
-	#include <unistd.h>
-	#include <pthread.h>
-	#include <sys/types.h>
-	#include <sys/syscall.h>
 
 	#define DELAY_SCLOCK 50000 /*microsegundos*/
 
-	pthread_mutex_t mux; /*mutex*/
-
 	void startSClock();
-	void* runSClock();
 	unsigned int getSClock();
-	unsigned int increaseClock();
+	unsigned int increaseSClock();
 
 
 #endif

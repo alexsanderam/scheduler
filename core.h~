@@ -12,43 +12,24 @@ dL'essentiel est invisible pour les yeux
     #ifndef CORE_H
     #define CORE_H 
 
-	#include "my_clock.h"
-	#include "cache.h"
 	#include "job.h"
     
     #include <stdio.h>
     #include <stdlib.h>
 	#include <unistd.h>
-	#include <pthread.h>
-	#include <semaphore.h>
-	#include <sys/types.h>
-	#include <sys/syscall.h>
-	#include <time.h>
-
-	#define LOCKED_RATE 0.8
-	#define DEFAULT_FREQUENCY 1
+	#include "my_clock.h"
 
 
     typedef struct 
 	{
 		unsigned int id;
-		float frequency;
 		Job* currentJob;
-
-		Cache* cache;
-
-		pthread_t* t; /*thread*/
-		pthread_mutex_t mux; /*mutex*/
-		sem_t sem; /*semáfaro*/
 
     } Core;
 
-	Core* createCore(float, Cache*);
-	void startCore(Core*);
-	void* runCore(void*);
-	void updateStatus(Job*);
+	Core* createCore();
+	void runCore(Core*);
 	void assignToCore(Core*, Job*);
-	void wakeUpCore(Core*);
 
 	
 #endif

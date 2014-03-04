@@ -13,7 +13,7 @@ dL'essentiel est invisible pour les yeux
 #include "scheduler.h"
 
 
-void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finishedQueue)
+void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* finishedQueue, int policy)
 {
 	Core* core;
 	Node* iterator;	
@@ -26,64 +26,73 @@ void* scheduling(List* cores, List* alreadyQueue, List* waitingQueue, List* fini
 	{
 		core = (Core*) iterator->value;
 
-		/*garante acesso exclusivo*/
-		pthread_mutex_lock(&core->mux);
+		if(alreadyQueue->size > 0)
+		{
+			if(core->currentJob == NULL)
+				makeBasicScheduling(core, alreadyQueue, policy);
 
-			if(alreadyQueue->size > 0)
-			{
-				if(core->currentJob == NULL)
-				{
-					makeBasicScheduling(core, alreadyQueue);
-					wakeUpCore(core);
-				}
-				else if((core->currentJob->status == WAITING) || (core->currentJob->status == FINISHED))
-				{
-					makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue);
-					wakeUpCore(core);
-				}
-				else if((CURRENT_QUANTUM(core->currentJob->currentStep) >= QUANTUM) || ((SHEDULER_DECISION(core->currentJob->currentStep, avg)) == 0))
-					makeSchedulingGap(core, alreadyQueue);
-			}
+			else if((core->currentJob->status == WAITING) || (core->currentJob->status == FINISHED))
+				makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue, policy);
+
+			else if((core->currentJob->currentStep > 0) && (CURRENT_QUANTUM(core->currentJob->currentStep) == 0))
+				makeSchedulingGap(core, alreadyQueue, policy);
+			
+			else if((policy ==  MY_POLICY) && ((SHEDULER_DECISION(core->currentJob->currentStep, avg)) == 0))
+				makeSchedulingGap(core, alreadyQueue, policy);
+		}
+		else if((core->currentJob != NULL) && ((core->currentJob->status == WAITING) || (core->currentJob->status == FINISHED)))
+		{
+			if(core->currentJob->status == WAITING)
+				add(waitingQueue, core->currentJob);
 			else if(core->currentJob->status == FINISHED)
-				makeSchedulingDueStatusJob(core, alreadyQueue, waitingQueue, finishedQueue);
+				add(finishedQueue, core->currentJob);
 
-		/*libera o acesso ao core*/
-		pthread_mutex_unlock(&core->mux);
-	}
+			core->currentJob = NULL;
+		}
+	}	
 
 	return 0;
 }
 
 
-void makeBasicScheduling(Core* core, List* alreadyQueue)
+void makeBasicScheduling(Core* core, List* alreadyQueue, int policy)
 {
 	Job* job;
 
-	if(core->currentJob != NULL)
-		core->currentJob->enterWaitingTime = getSClock();
+	switch (policy)
+	{
+		case ROUND_ROB: 
+			job = (Job*) get(*alreadyQueue, 0)->value;
+			removeByIndex(alreadyQueue, 0);
+			break;
 
-	/*obtém o job que mais atendeu o critério de escalonamento*/
-	job = getGreatestCriterionJob(alreadyQueue);
+		default:
+			/*obtém o job que mais atendeu o critério de escalonamento*/
+			job = getGreatestCriterionJob(alreadyQueue);
+			break;
+	
+	}
 
-	if(job != NULL)
-		assignToCore(core, job);
+	//if(job != NULL)
+	assignToCore(core, job);
 }
 
 
-void makeSchedulingDueStatusJob(Core* core, List* alreadyQueue, List* waitingQueue, List* finishedQueue)
+void makeSchedulingDueStatusJob(Core* core, List* alreadyQueue, List* waitingQueue, List* finishedQueue, int policy)
 {
 	if(core->currentJob->status == WAITING)
 		add(waitingQueue, core->currentJob);
 	else if(core->currentJob->status == FINISHED)
 		add(finishedQueue, core->currentJob);
 
-	makeBasicScheduling(core, alreadyQueue);
+	makeBasicScheduling(core, alreadyQueue, policy);
 }
 
-void makeSchedulingGap(Core* core, List* alreadyQueue)
+void makeSchedulingGap(Core* core, List* alreadyQueue, int policy)
 {
+	core->currentJob->status = ALREADY;
 	add(alreadyQueue, core->currentJob);
-	makeBasicScheduling(core, alreadyQueue);
+	makeBasicScheduling(core, alreadyQueue, policy);
 }
 
 
@@ -130,9 +139,7 @@ float avgCriterion(List* alreadyJobs)
 
 
 	if(alreadyJobs->size == 0)
-	{
 		return 0;
-	}
 
 	iteratorStart(alreadyJobs);
 	while ((iterator = iteratorNext(alreadyJobs)) != NULL)

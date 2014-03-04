@@ -14,6 +14,9 @@ dL'essentiel est invisible pour les yeux
     
     #include<stdio.h>
     #include<stdlib.h>
+	#include <time.h>
+	#include "my_clock.h"
+	#include "list_struct.h"
 
 	#define NEW 0
 	#define RUNNING 1
@@ -21,22 +24,21 @@ dL'essentiel est invisible pour les yeux
 	#define ALREADY 3
 	#define FINISHED 4
 
+	#define LOCKED_RATE 0.8
+
     typedef struct {
 
 		int id;
         char name[10];
-        int arrival_time;
-		int service_time;
-        int priority;
+        unsigned int arrival_time;
+		unsigned int service_time;
+        unsigned int priority;
 
 		unsigned int status;
-		float turnaroundTime;
-		float waitingTime;
-		float responseTime;
-		//float CPUTime;
+		unsigned int turnaroundTime;
+		unsigned int waitingTime;
+		unsigned int responseTime;
 		unsigned int currentStep;
-
-		float enterWaitingTime; //último instante que o job entrou para a fila de espera*/
 
 		void (*function)();
 
@@ -45,8 +47,10 @@ dL'essentiel est invisible pour les yeux
 	Job* createJob();
 	Job* createJobWithFunction(void*);
 	void killJob(Job*);
+	void updateStatus(Job*);
 	unsigned int nextJobID();
 	void printJob(Job);
+	List* readJobsFromFile(char*);
 
 
 #endif

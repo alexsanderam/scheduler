@@ -18,12 +18,9 @@ unsigned int nextID = 0;
 	Entrada: frequência e cache do core a ser criado
 	Saída: ponteiro de um novo core
 */
-Core* createCore(float frequency, Cache* cache)
+Core* createCore()
 {
 	Core* core = (Core*) malloc (sizeof(Core));
-	
-	core->frequency = frequency;
-	core->cache = cache;
 	core->currentJob = NULL;
 	core->id = nextID++;
 
@@ -31,114 +28,23 @@ Core* createCore(float frequency, Cache* cache)
 }
 
 
-/*
-	Inicializa o novo core
-*/
-void startCore(Core* core)
-{
-	core->t = (pthread_t*) malloc (sizeof(pthread_t));
-	sem_init(&core->sem, 0, 0); /*Inicializa o semáfaro com valor 0 para threads*/
-	pthread_mutex_init(&core->mux, NULL); /*inicializa mutex do core*/
-	pthread_create(core->t, NULL, runCore, (void*) core);
+void runCore(Core* core)
+{		
+	core->currentJob->currentStep++;
+
+	if(core->currentJob->responseTime == 0)
+		core->currentJob->responseTime = getSClock();
+
+	updateStatus(core->currentJob);
 }
 
-
-/*
-	'Executa' o core
-*/
-void* runCore(void* c)
-{
-	Core* core = (Core*) c;
-	Job* j;
-
-	while(1)
-	{
-		/*delay do clock de acordo com a frequência do core*/
-		usleep(((float) 1/(core->frequency)) * DELAY_SCLOCK);
-
-		/*garante acesso exclusivo*/
-		pthread_mutex_lock(&core->mux);
-
-		if(core->currentJob == NULL)
-		{
-			pthread_mutex_unlock(&core->mux);
-			sem_wait(&core->sem); /*decrementa o semáfaro*/
-			pthread_mutex_lock(&core->mux);
-		}
-
-		j = core->currentJob;
-
-		if(j->responseTime == 0)
-			j->responseTime = getSClock(); //tempo de resposta
-
-		if (j->function != NULL)
-		{
-			pthread_mutex_unlock(&core->mux);
-			j->function();
-			pthread_mutex_lock(&core->mux);
-		}
-		else
-		{
-			j->currentStep++;			
-			updateStatus(core);
-		}
-
-		if((core->currentJob->status == FINISHED) || (core->currentJob->status == WAITING))
-		{
-			pthread_mutex_unlock(&core->mux);
-			sem_wait(&core->sem);
-			pthread_mutex_lock(&core->mux);
-		}
-
-		/*desbloqueia o acesso ao core*/
-		pthread_mutex_unlock(&core->mux);
-	}
-
-	return 0;
-}
-
-
-void wakeUpCore(Core* core)
-{
-	//int valueSem = 0;
-	//sem_getvalue(&core->sem, &valueSem);
-
-	sem_post(&core->sem);
-}
-
-
-/*
-	Atualiza o estado de um job.
-	Warning: esta função subentende que a exclusão mútua
-	é garantida por quem a invoca.
-*/
-void updateStatus(Core* core)
-{
-	Job* j = core->currentJob;
-	float waitingRate = 0;
-
-	srand (time(NULL));
-	waitingRate = (float)(rand() / (float) RAND_MAX);
-
-	printf("\n\nStep[%s :: %d]: %d / %d\n", j->name, j->status, j->currentStep, j->service_time);
-
-	if((j->status == RUNNING) && (j->currentStep == j->service_time))
-	{
-		j->status = FINISHED;
-		j->turnaroundTime = j->waitingTime + j->currentStep;
-	}
-	else if((j->status == RUNNING) && (waitingRate >= LOCKED_RATE))
-		j->status = WAITING;
-}
 
 
 /*
 	Atribui um job ao core
-	Warning: esta função subentende que a exclusão mútua
 */
 void assignToCore(Core* core, Job* job)
 {
 		job->status = RUNNING;
-		job->waitingTime += (getSClock() - job->enterWaitingTime); //tempo de espera
 		core->currentJob = job;
 }

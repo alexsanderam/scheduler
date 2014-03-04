@@ -77,8 +77,8 @@ void updateStatus(Job* job)
 		job->waitingTime = (getSClock() - job->arrival_time - job->currentStep) + 1;
 		job->turnaroundTime = job->waitingTime + job->currentStep;
 	}
-	//else if((job->status == RUNNING) && (waitingRate >= LOCKED_RATE))
-		//job->status = WAITING;
+	else if((job->status == RUNNING) && (waitingRate >= LOCKED_RATE))
+		job->status = WAITING;*/
 }
 
 
